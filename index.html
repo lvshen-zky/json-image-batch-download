@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>批量下载图片（fetch 版）</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 16px;
+      line-height: 1.6;
+    }
+    button {
+      padding: 10px 18px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    #log {
+      margin-top: 16px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      max-height: 320px;
+      overflow: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+      background: #fafafa;
+    }
+  </style>
+</head>
+<body>
+  <h1>批量下载图片</h1>
+  <p>点击下面按钮开始下载全部图片（Chrome 可能会提示“是否允许多个文件下载”，请点允许）。</p>
+  <button id="startBtn">开始下载</button>
+  <div id="log"></div>
+
+  <script>
+    // 你的图片地址列表
+    const urls = [
+  "your pic links",
+];
+
+
+
+    const uniqueUrls = Array.from(new Set(urls)); // 去重
+    const logDiv = document.getElementById('log');
+    const btn = document.getElementById('startBtn');
+
+    function log(msg) {
+      const time = new Date().toLocaleTimeString();
+      logDiv.textContent += `[${time}] ${msg}\n`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // 根据响应头 Content-Type 推断扩展名（关键修复点）
+    function extFromContentType(ct = '') {
+      ct = (ct || '').toLowerCase().split(';')[0].trim();
+      const map = {
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/webp': 'webp',
+        'image/gif': 'gif',
+        'image/svg+xml': 'svg',
+        'image/bmp': 'bmp',
+        'image/tiff': 'tiff',
+        'image/x-icon': 'ico',
+        'application/octet-stream': 'bin'
+      };
+      return map[ct] || 'bin';
+    }
+
+    // 兜底：从 URL 里试着提取后缀（只有 URL 本身带 .png/.jpg 时才有用）
+    function extFromUrl(url) {
+      const cleanUrl = url.split('#')[0].split('?')[0];
+      const last = cleanUrl.split('/').pop() || '';
+      const dotIndex = last.lastIndexOf('.');
+      if (dotIndex !== -1 && dotIndex < last.length - 1) {
+        const ext = last.substring(dotIndex + 1).toLowerCase();
+        if (/^[a-z0-9]{1,6}$/.test(ext)) return ext;
+      }
+      return '';
+    }
+
+    // 用于检测“其实不是图片”的返回（比如 403 页面、鉴权失败页面等）
+    async function ensureIsImage(response) {
+      const contentType = response.headers.get('Content-Type') || '';
+      if (!contentType.toLowerCase().startsWith('image/')) {
+        // 尝试读一点文本帮助你定位问题
+        let preview = '';
+        try {
+          const text = await response.clone().text();
+          preview = text.slice(0, 120).replace(/\s+/g, ' ');
+        } catch (_) {}
+        throw new Error(`返回不是图片：${contentType || 'unknown'}${preview ? '，内容预览：' + preview : ''}`);
+      }
+      return contentType;
+    }
+
+    // 可选：给下载加一点间隔，降低被风控/拦截概率
+    function sleep(ms) {
+      return new Promise(r => setTimeout(r, ms));
+    }
+
+    async function downloadOne(url, index) {
+      log(`开始下载第 ${index + 1} 张：${url}`);
+
+      const response = await fetch(url, { mode: 'cors' });
+      if (!response.ok) {
+        throw new Error('HTTP ' + response.status);
+      }
+
+      // 校验确实是图片
+      const contentType = await ensureIsImage(response);
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      // 优先用 Content-Type 推断后缀；如果推断不到，再尝试从 URL 提取；最后兜底 bin
+      const ext = extFromContentType(contentType) || extFromUrl(url) || 'bin';
+      const fileName = `img_${index + 1}.${ext}`;
+
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      URL.revokeObjectURL(blobUrl);
+      log(`✅ 已触发下载：${fileName}（Content-Type: ${contentType}）`);
+    }
+
+    btn.addEventListener('click', async function () {
+      if (!uniqueUrls.length) {
+        alert('URL 列表为空');
+        return;
+      }
+
+      const allow = confirm(
+        `共 ${uniqueUrls.length} 张图片，点击“确定”开始批量下载。\n\n注意：Chrome 可能会提示“是否允许该站点下载多个文件”，请点允许。`
+      );
+      if (!allow) return;
+
+      btn.disabled = true;
+      btn.textContent = '下载中...';
+      logDiv.textContent = '';
+
+      for (let i = 0; i < uniqueUrls.length; i++) {
+        const url = uniqueUrls[i];
+        try {
+          await downloadOne(url, i);
+          await sleep(250); // 小间隔，避免触发站点限制（可改大/改小/删掉）
+        } catch (e) {
+          log(`❌ 第 ${i + 1} 张失败：${url} - ${e.message}`);
+        }
+      }
+
+      log('全部任务结束。如未看到下载，请检查浏览器右上角是否有被拦截的下载提示。');
+      btn.disabled = false;
+      btn.textContent = '重新下载';
+    });
+  </script>
+</body>
+</html>
