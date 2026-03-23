@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>批量下载图片（fetch 版）</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 16px;
+      line-height: 1.6;
+    }
+    button {
+      padding: 10px 18px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    #log {
+      margin-top: 16px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      max-height: 320px;
+      overflow: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+      background: #fafafa;
+    }
+  </style>
+</head>
+<body>
+  <h1>批量下载图片</h1>
+  <p>点击下面按钮开始下载全部图片（Chrome 可能会提示“是否允许多个文件下载”，请点允许）。</p>
+  <button id="startBtn">开始下载</button>
+  <div id="log"></div>
+
+  <script>
+    // 你的图片地址列表
+    const urls = [
+  "https://sgimg.kexiaozhan.com/material/2025121600/9312313179916392",
+  "https://sgimg.kexiaozhan.com/material/2025121600/3095964285570697",
+  "https://sgimg.kexiaozhan.com/material/2025121600/3178004841922916",
+  "https://sgimg.kexiaozhan.com/material/2025121600/1542134041446031",
+  "https://sgimg.kexiaozhan.com/material/2025121600/2330050024461017",
+  "https://sgimg.kexiaozhan.com/material/2025121600/7204346670230448",
+  "https://sgimg.kexiaozhan.com/material/2025121600/1440590540137679",
+  "https://sgimg.kexiaozhan.com/material/2025121600/7478274033305850",
+  "https://sgimg.kexiaozhan.com/material/2025121600/2130451129619149",
+  "https://sgimg.kexiaozhan.com/material/2025121600/1080610561493212",
+  "https://sgimg.kexiaozhan.com/material/2025121600/5436340030722037",
+  "https://sgimg.kexiaozhan.com/material/2025121600/4045976499790654",
+  "https://sgimg.kexiaozhan.com/material/2025121600/5866996156350731",
+  "https://sgimg.kexiaozhan.com/material/2025121600/7285784708962252",
+  "https://sgimg.kexiaozhan.com/material/2025121600/4928416565137699",
+  "https://sgimg.kexiaozhan.com/material/2025121600/2181326539382046",
+  "https://sgimg.kexiaozhan.com/material/2025121600/9186761336707063",
+  "https://sgimg.kexiaozhan.com/material/2025121600/4306435078844340",
+  "https://sgimg.kexiaozhan.com/material/2025121600/9900420458330912",
+  "https://sgimg.kexiaozhan.com/material/2025121600/2351198313798066",
+  "https://sgimg.kexiaozhan.com/material/2025121600/9715297605597508",
+  "https://sgimg.kexiaozhan.com/material/2025121600/1259182079106062",
+  "https://sgimg.kexiaozhan.com/material/2025121600/2468415693339085",
+  "https://sgimg.kexiaozhan.com/material/2025121600/0745906029358622",
+  "https://sgimg.kexiaozhan.com/material/2025121600/7482146322929381",
+  "https://sgimg.kexiaozhan.com/material/2025121600/4498391474707449",
+  "https://sgimg.kexiaozhan.com/material/2025121600/0710786333369448",
+  "https://sgimg.kexiaozhan.com/material/2025121600/2170397541242157",
+  "https://sgimg.kexiaozhan.com/material/2025121600/0364143746589778",
+  "https://sgimg.kexiaozhan.com/material/2025121600/7742497097766133",
+  "https://sgimg.kexiaozhan.com/material/2025121600/2513494216534169",
+  "https://sgimg.kexiaozhan.com/material/2025121600/4901282835110834",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_19.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_18.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_17.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_16.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_15.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_14.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_13.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_12.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_11.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_10.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_09.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_08.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_07.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_06.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_05.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_04.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_03.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_02.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111312/KakaoTalk_20251020_141216373_01.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025111311/KakaoTalk_20251020_141216373.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-99.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-62.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-61.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-29.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-23.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/한태준 zflip7.png",
+  "https://sgimg.kexiaozhan.com/material/2025102313/김지한 zflip7.png",
+  "https://sgimg.kexiaozhan.com/material/2025102313/한태준.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/김지한.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_99.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_62.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_61.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_29.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_23.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_22.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_20.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_17.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_16.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_15.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_14.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_12.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_11.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_10.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_7.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_6.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_5.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_3.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_2.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/인물_로고_전체 선수단 케이스_Z플립7_1.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-22.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-20.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-17.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102312/픽스팟 케이스-3.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102312/픽스팟 케이스-5.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-6.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-7.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-10.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-11.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-12.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-14.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-15.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102313/픽스팟 케이스-16.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102312/픽스팟 케이스-2.jpg",
+  "https://sgimg.kexiaozhan.com/material/2025102312/픽스팟 케이스-1.jpg",
+];
+
+
+
+    const uniqueUrls = Array.from(new Set(urls)); // 去重
+    const logDiv = document.getElementById('log');
+    const btn = document.getElementById('startBtn');
+
+    function log(msg) {
+      const time = new Date().toLocaleTimeString();
+      logDiv.textContent += `[${time}] ${msg}\n`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // 根据响应头 Content-Type 推断扩展名（关键修复点）
+    function extFromContentType(ct = '') {
+      ct = (ct || '').toLowerCase().split(';')[0].trim();
+      const map = {
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/webp': 'webp',
+        'image/gif': 'gif',
+        'image/svg+xml': 'svg',
+        'image/bmp': 'bmp',
+        'image/tiff': 'tiff',
+        'image/x-icon': 'ico',
+        'application/octet-stream': 'bin'
+      };
+      return map[ct] || 'bin';
+    }
+
+    // 兜底：从 URL 里试着提取后缀（只有 URL 本身带 .png/.jpg 时才有用）
+    function extFromUrl(url) {
+      const cleanUrl = url.split('#')[0].split('?')[0];
+      const last = cleanUrl.split('/').pop() || '';
+      const dotIndex = last.lastIndexOf('.');
+      if (dotIndex !== -1 && dotIndex < last.length - 1) {
+        const ext = last.substring(dotIndex + 1).toLowerCase();
+        if (/^[a-z0-9]{1,6}$/.test(ext)) return ext;
+      }
+      return '';
+    }
+
+    // 用于检测“其实不是图片”的返回（比如 403 页面、鉴权失败页面等）
+    async function ensureIsImage(response) {
+      const contentType = response.headers.get('Content-Type') || '';
+      if (!contentType.toLowerCase().startsWith('image/')) {
+        // 尝试读一点文本帮助你定位问题
+        let preview = '';
+        try {
+          const text = await response.clone().text();
+          preview = text.slice(0, 120).replace(/\s+/g, ' ');
+        } catch (_) {}
+        throw new Error(`返回不是图片：${contentType || 'unknown'}${preview ? '，内容预览：' + preview : ''}`);
+      }
+      return contentType;
+    }
+
+    // 可选：给下载加一点间隔，降低被风控/拦截概率
+    function sleep(ms) {
+      return new Promise(r => setTimeout(r, ms));
+    }
+
+    async function downloadOne(url, index) {
+      log(`开始下载第 ${index + 1} 张：${url}`);
+
+      const response = await fetch(url, { mode: 'cors' });
+      if (!response.ok) {
+        throw new Error('HTTP ' + response.status);
+      }
+
+      // 校验确实是图片
+      const contentType = await ensureIsImage(response);
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      // 优先用 Content-Type 推断后缀；如果推断不到，再尝试从 URL 提取；最后兜底 bin
+      const ext = extFromContentType(contentType) || extFromUrl(url) || 'bin';
+      const fileName = `img_${index + 1}.${ext}`;
+
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      URL.revokeObjectURL(blobUrl);
+      log(`✅ 已触发下载：${fileName}（Content-Type: ${contentType}）`);
+    }
+
+    btn.addEventListener('click', async function () {
+      if (!uniqueUrls.length) {
+        alert('URL 列表为空');
+        return;
+      }
+
+      const allow = confirm(
+        `共 ${uniqueUrls.length} 张图片，点击“确定”开始批量下载。\n\n注意：Chrome 可能会提示“是否允许该站点下载多个文件”，请点允许。`
+      );
+      if (!allow) return;
+
+      btn.disabled = true;
+      btn.textContent = '下载中...';
+      logDiv.textContent = '';
+
+      for (let i = 0; i < uniqueUrls.length; i++) {
+        const url = uniqueUrls[i];
+        try {
+          await downloadOne(url, i);
+          await sleep(250); // 小间隔，避免触发站点限制（可改大/改小/删掉）
+        } catch (e) {
+          log(`❌ 第 ${i + 1} 张失败：${url} - ${e.message}`);
+        }
+      }
+
+      log('全部任务结束。如未看到下载，请检查浏览器右上角是否有被拦截的下载提示。');
+      btn.disabled = false;
+      btn.textContent = '重新下载';
+    });
+  </script>
+</body>
+</html>
